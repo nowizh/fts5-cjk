@@ -1,0 +1,43 @@
+[package]
+name = "fts5-cjk"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97.1"
+resolver = "3"
+description = "CJK normalization and literal phrase helpers for SQLite FTS5"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/nowizh/fts5-cjk"
+documentation = "https://docs.rs/fts5-cjk"
+keywords = ["sqlite", "fts5", "cjk", "korean", "full-text-search"]
+categories = ["text-processing", "database"]
+include = [
+    "/src/**",
+    "/tests/**",
+    "/README.md",
+    "/LICENSE",
+    "/CHANGELOG.md",
+    "/Cargo.toml",
+    "/Cargo.lock",
+    "/tools/unicode61/LICENSE-UNICODE",
+]
+
+# docs.rs renders the default NFC-off profile. `nfc` is not enabled here because
+# the feature changes the ACTIVE_PROFILE and UDF_NAME values instead of adding items.
+[package.metadata.docs.rs]
+all-features = false
+no-default-features = false
+features = []
+
+[features]
+default = []
+nfc = ["dep:unicode-normalization"]
+
+[dependencies]
+unicode-normalization = { version = "0.1.25", optional = true, default-features = false }
+
+[dev-dependencies]
+proptest = { version = "1.11.0", default-features = false, features = ["std"] }
+
+[lints.rust]
+unsafe_code = "forbid"
