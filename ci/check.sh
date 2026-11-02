@@ -172,9 +172,9 @@ check_msrv_identity() {
     cargo_identity=$(cargo --version)
 
     [[ "$rustc_identity" == "rustc $expected ("* ]] || die \
-        "MSRV identity mismatch: Cargo.toml rust-version is $expected, but the active rustc is '$rustc_identity'; select it, for example with RUSTUP_TOOLCHAIN=$expected"
+        "MSRV identity mismatch: Cargo.toml rust-version is $expected, but the active rustc is '$rustc_identity'; select it, for example with rustup run $expected ci/check.sh msrv"
     [[ "$cargo_identity" == "cargo $expected ("* ]] || die \
-        "MSRV identity mismatch: Cargo.toml rust-version is $expected, but the active cargo is '$cargo_identity'; select it, for example with RUSTUP_TOOLCHAIN=$expected"
+        "MSRV identity mismatch: Cargo.toml rust-version is $expected, but the active cargo is '$cargo_identity'; select it, for example with rustup run $expected ci/check.sh msrv"
 
     printf 'MSRV rustc identity: %s\n' "$rustc_identity"
     printf 'MSRV cargo identity: %s\n' "$cargo_identity"
