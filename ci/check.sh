@@ -235,7 +235,7 @@ dependencies = {
 require(
     dependencies
     == {
-        ("unicode-normalization", None): (True, False, "^0.1.25"),
+        ("unicode-normalization", None): (True, False, ">=0.1.25, <0.1.26"),
         ("proptest", "dev"): (False, False, "^1.11.0"),
     },
     "dependencies",

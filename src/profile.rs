@@ -35,6 +35,18 @@ const NFC: bool = false;
 #[cfg(feature = "nfc")]
 const NFC: bool = true;
 
+// The nfc profile identity covers the NFC tables. Cargo.toml bounds the
+// dependency below 0.1.26; this assertion also fails builds where a patch,
+// fork or relaxed bound supplies other tables.
+#[cfg(feature = "nfc")]
+const _: () = {
+    let (major, minor, patch) = unicode_normalization::UNICODE_VERSION;
+    assert!(
+        major == 17 && minor == 0 && patch == 0,
+        "fts5-cjk nfc profile requires Unicode 17.0.0 normalization tables; other tables need a new transform profile and a full reindex"
+    );
+};
+
 /// Complete transform profile compiled into this crate.
 pub const ACTIVE_PROFILE: TransformProfile = TransformProfile {
     id: PROFILE_ID,

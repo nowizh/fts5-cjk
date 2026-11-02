@@ -27,6 +27,24 @@ Every release entry below states whether any profile changed.
 | default (`nfc` feature off) | `fts5-cjk/v2;unicode61=6.1-default;nfc=off` | `2` | `false` | `fts5_cjk_v2` | `unicode61 remove_diacritics 2` |
 | `features = ["nfc"]` | `fts5-cjk/v2;unicode61=6.1-default;nfc=on` | `2` | `true` | `fts5_cjk_v2_nfc` | `unicode61 remove_diacritics 2` |
 
+## [Unreleased]
+
+### Changed
+
+- The `nfc` feature now requires `unicode-normalization` `>=0.1.25, <0.1.26`
+  instead of `0.1.25` (a caret range), and the `nfc` build fails at compile
+  time unless the normalization tables report Unicode 17.0.0.
+  `unicode-normalization` 0.1.26 moves to Unicode 18.0.0 tables, which would
+  change NFC output under the unchanged NFC-on profile. A dependency graph
+  that requires a later `unicode-normalization` 0.1.x release elsewhere now
+  fails resolution in `nfc` builds instead of silently changing index tokens.
+
+### Profiles
+
+- No profile changed. Both profile identities and the transform output are
+  unchanged. Adopting newer normalization tables is a separate decision that
+  needs a new transform profile and a full reindex.
+
 ## [0.1.0] - 2026-09-29
 
 ### Added

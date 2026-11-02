@@ -73,6 +73,14 @@ identity. This includes classifier range changes, boundary-classification
 changes, NFC ordering, UDF semantics, literal escaping and phrase
 construction, and the tokenizer contract.
 
+The NFC-on profile is defined against the Unicode 17.0.0 normalization tables
+of `unicode-normalization` 0.1.25. The `nfc` feature therefore uses the
+upper-bounded requirement `>=0.1.25, <0.1.26` rather than a caret range, and a
+compile-time check rejects any other table version. Newer tables are accepted
+only together with a new transform profile and a full reindex. A build whose
+dependency graph also requires a later `unicode-normalization` 0.1.x release
+fails dependency resolution when the `nfc` feature is enabled instead of silently changing index tokens.
+
 When persisted index metadata differs from the compiled `ACTIVE_PROFILE`, the
 consumer must refuse startup. Recovery requires an explicit rebuild or reindex
 using the compiled contract; only after that succeeds may the consumer stamp

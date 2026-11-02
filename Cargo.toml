@@ -34,7 +34,10 @@ default = []
 nfc = ["dep:unicode-normalization"]
 
 [dependencies]
-unicode-normalization = { version = "0.1.25", optional = true, default-features = false }
+# unicode-normalization 0.1.26 switches the NFC tables from Unicode 17.0.0 to 18.0.0,
+# which would change nfc-profile output under an unchanged profile. Accepting newer
+# tables requires a new transform profile and a full reindex.
+unicode-normalization = { version = ">=0.1.25, <0.1.26", optional = true, default-features = false }
 
 [dev-dependencies]
 proptest = { version = "1.11.0", default-features = false, features = ["std"] }
