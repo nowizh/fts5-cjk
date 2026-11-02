@@ -414,13 +414,16 @@ transaction policy; this crate has no SQLite binding dependency.
 
 ## Minimum supported Rust version
 
-The declared MSRV is `rust-version = "1.97.1"`. It is the exact toolchain that
-`rust-toolchain.toml` pins, and on that toolchain the repository gate builds,
-tests, documents, lints, and dry-run-packages both the default and `nfc`
-profiles, and asserts that the pin and `rust-version` agree. No lower MSRV is
-claimed. The Rust 2024 edition floor is 1.85, but declaring it would require
-a separate toolchain matrix and a dependency MSRV proof for both profiles, and
-neither exists.
+The declared MSRV is `rust-version = "1.97.1"`. It is a separate contract from
+the development toolchain, which `mise.toml` pins and `rust-toolchain.toml`
+mirrors; the development toolchain may be newer than `rust-version`.
+`ci/check.sh msrv`, run with the MSRV toolchain selected (for example
+`RUSTUP_TOOLCHAIN=1.97.1 ci/check.sh msrv`), first checks that toolchain's
+identity and then builds and tests both the default and `nfc` profiles on it.
+Formatting, lints, documentation, and package dry-runs run on the development
+toolchain. No lower MSRV is claimed. The Rust 2024 edition floor is 1.85, but
+declaring it would require a separate toolchain matrix and a dependency MSRV
+proof for both profiles, and neither exists.
 
 ## Running the test suite
 

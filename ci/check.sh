@@ -147,6 +147,39 @@ check_toolchain_identity() {
     printf 'cargo identity: %s\n' "$cargo_identity"
 }
 
+# Print the minimum supported Rust version declared by Cargo.toml
+# rust-version. It is a separate contract from the development toolchain.
+msrv_version() {
+    python3 -E -c '
+import sys
+import tomllib
+
+with open("Cargo.toml", "rb") as manifest_file:
+    msrv = tomllib.load(manifest_file).get("package", {}).get("rust-version")
+if not isinstance(msrv, str) or not msrv:
+    sys.exit("error: Cargo.toml does not declare package.rust-version")
+print(msrv)
+'
+}
+
+check_msrv_identity() {
+    local cargo_identity
+    local expected
+    local rustc_identity
+
+    expected=$(msrv_version) || die "could not read rust-version from Cargo.toml"
+    rustc_identity=$(rustc --version)
+    cargo_identity=$(cargo --version)
+
+    [[ "$rustc_identity" == "rustc $expected ("* ]] || die \
+        "MSRV identity mismatch: Cargo.toml rust-version is $expected, but the active rustc is '$rustc_identity'; select it, for example with RUSTUP_TOOLCHAIN=$expected"
+    [[ "$cargo_identity" == "cargo $expected ("* ]] || die \
+        "MSRV identity mismatch: Cargo.toml rust-version is $expected, but the active cargo is '$cargo_identity'; select it, for example with RUSTUP_TOOLCHAIN=$expected"
+
+    printf 'MSRV rustc identity: %s\n' "$rustc_identity"
+    printf 'MSRV cargo identity: %s\n' "$cargo_identity"
+}
+
 check_sqlite_identity() {
     local capability
     local parameter_probe
@@ -288,8 +321,9 @@ require(
 )
 require(toolchain.get("profile") == rust_profile, "rust-toolchain.toml profile")
 require(
-    toolchain.get("channel") == package["rust_version"],
-    "rust-toolchain.toml channel and rust-version",
+    tuple(int(part) for part in package["rust_version"].split("."))
+    <= tuple(int(part) for part in rust_version.split(".")),
+    "rust-version not newer than the mise.toml toolchain",
 )
 require(
     package["features"]
@@ -405,8 +439,22 @@ run_clippy_gate() {
     cargo clippy --all-targets --locked --no-default-features --features nfc -- -D warnings
 }
 
+# The MSRV gate runs on the toolchain named by Cargo.toml rust-version. It only
+# builds and tests: fmt, clippy, docs and package dry-runs belong to the
+# development toolchain.
+run_msrv_gate() {
+    require_tools
+    check_msrv_identity
+    SQLITE_BUILD_DIR=$(mktemp -d "${TMPDIR:-/tmp}/fts5-cjk-check.XXXXXX")
+    resolve_sqlite3
+    check_sqlite_identity
+
+    cargo test --locked --no-default-features
+    cargo test --locked --no-default-features --features nfc
+}
+
 usage() {
-    printf 'Usage: %s [all|test|clippy]\n' "$0" >&2
+    printf 'Usage: %s [all|test|clippy|msrv]\n' "$0" >&2
 }
 
 case "${1:-all}" in
@@ -419,6 +467,9 @@ case "${1:-all}" in
         ;;
     clippy)
         run_clippy_gate
+        ;;
+    msrv)
+        run_msrv_gate
         ;;
     *)
         usage
