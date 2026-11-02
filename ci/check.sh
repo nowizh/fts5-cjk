@@ -435,6 +435,7 @@ run_test_gate() {
 }
 
 run_clippy_gate() {
+    check_toolchain_identity
     cargo clippy --all-targets --locked --no-default-features -- -D warnings
     cargo clippy --all-targets --locked --no-default-features --features nfc -- -D warnings
 }

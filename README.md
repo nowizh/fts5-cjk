@@ -435,8 +435,10 @@ oracle fail loudly rather than skip when it is missing. The repository gate
 
 The development toolchain is pinned in `mise.toml` and `mise.lock`, and
 `rust-toolchain.toml` mirrors it for rustup. `mise install` prepares that
-toolchain and `mise exec -- ci/check.sh` runs the gate with it. `ci/check.sh`
-fails when the three files disagree or when another `rustc` is active.
+toolchain and `mise exec -- ci/check.sh` runs the gate with it. The default,
+`test`, and `clippy` modes of `ci/check.sh` fail when the active `rustc` or
+`cargo` is not the version `mise.toml` pins, and the default and `test` modes
+also fail when the three files disagree.
 `Cargo.lock` remains the separate dependency lock.
 
 ## License
