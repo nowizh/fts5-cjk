@@ -1,0 +1,14 @@
+# This file and mise.lock pin the exact development toolchain for this
+# repository. rust-toolchain.toml mirrors it for rustup, and ci/check.sh fails
+# when the three files disagree or another rustc is active. The minimum
+# supported Rust version is rust-version in Cargo.toml, a separate contract.
+min_version = "2026.10.21"
+
+[tools]
+rust = { version = "1.97.1", profile = "minimal", components = ["clippy", "rustfmt"] }
+
+[settings]
+lockfile = true
+locked = true
+auto_install = false
+exec_auto_install = false

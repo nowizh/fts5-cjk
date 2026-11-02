@@ -430,6 +430,12 @@ variable set to such a shell. The FTS5 contract test and the `unicode61`
 oracle fail loudly rather than skip when it is missing. The repository gate
 `ci/check.sh` provisions SQLite 3.53.2 in CI.
 
+The development toolchain is pinned in `mise.toml` and `mise.lock`, and
+`rust-toolchain.toml` mirrors it for rustup. `mise install` prepares that
+toolchain and `mise exec -- ci/check.sh` runs the gate with it. `ci/check.sh`
+fails when the three files disagree or when another `rustc` is active.
+`Cargo.lock` remains the separate dependency lock.
+
 ## License
 
 MIT (see `LICENSE`). `src/unicode61_data.rs` is generated from Unicode

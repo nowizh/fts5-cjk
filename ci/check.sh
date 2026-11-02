@@ -4,8 +4,6 @@ set -euo pipefail
 
 export LC_ALL=C
 
-readonly EXPECTED_RUSTC="rustc 1.97.1 (8bab26f4f 2026-07-14)"
-readonly EXPECTED_CARGO="cargo 1.97.1 (c980f4866 2026-06-30)"
 readonly SQLITE_ARCHIVE_URL="https://www.sqlite.org/2026/sqlite-autoconf-3530200.tar.gz"
 readonly SQLITE_ARCHIVE_SHA256="588ad51949419a56ebe81fe56193d510c559eb94c9a57748387860b5d3069316"
 readonly SQLITE_SOURCE_SHA3_256="44fd61b9f93b4155105cb2d80c957ae6c64a8b5bd6ed51a4992f0dbd438e4e11"
@@ -113,9 +111,40 @@ resolve_sqlite3() {
     export FTS5_CJK_SQLITE3=$RESOLVED_SQLITE3
 }
 
+# Print the exact Rust version that mise.toml pins. mise.toml is the toolchain
+# authority; rust-toolchain.toml mirrors it and check_manifest_contract checks
+# that they agree.
+toolchain_version() {
+    python3 -E -c '
+import sys
+import tomllib
+
+with open("mise.toml", "rb") as mise_file:
+    rust = tomllib.load(mise_file).get("tools", {}).get("rust")
+if isinstance(rust, dict):
+    rust = rust.get("version")
+if not isinstance(rust, str) or not rust:
+    sys.exit("error: mise.toml does not pin a tools.rust version")
+print(rust)
+'
+}
+
 check_toolchain_identity() {
-    assert_equal "rustc identity" "$EXPECTED_RUSTC" "$(rustc --version)"
-    assert_equal "Cargo identity" "$EXPECTED_CARGO" "$(cargo --version)"
+    local cargo_identity
+    local expected
+    local rustc_identity
+
+    expected=$(toolchain_version) || die "could not read the pinned Rust version from mise.toml"
+    rustc_identity=$(rustc --version)
+    cargo_identity=$(cargo --version)
+
+    [[ "$rustc_identity" == "rustc $expected ("* ]] || die \
+        "active rustc does not match mise.toml: expected rustc $expected, got '$rustc_identity'"
+    [[ "$cargo_identity" == "cargo $expected ("* ]] || die \
+        "active cargo does not match mise.toml: expected cargo $expected, got '$cargo_identity'"
+
+    printf 'rustc identity: %s\n' "$rustc_identity"
+    printf 'cargo identity: %s\n' "$cargo_identity"
 }
 
 check_sqlite_identity() {
@@ -172,6 +201,7 @@ check_manifest_contract() {
     cargo metadata --format-version 1 --locked --no-deps >"$metadata_file"
     python3 -E -c '
 import json
+import re
 import sys
 import tomllib
 
@@ -210,10 +240,56 @@ require(
 )
 require(package["rust_version"] == "1.97.1", "rust-version")
 with open("rust-toolchain.toml", "rb") as toolchain_file:
-    toolchain = tomllib.load(toolchain_file)
+    toolchain = tomllib.load(toolchain_file).get("toolchain", {})
+with open("mise.toml", "rb") as mise_file:
+    mise = tomllib.load(mise_file)
+with open("mise.lock", "rb") as lock_file:
+    lock = tomllib.load(lock_file)
+
+# mise.toml and mise.lock are the exact development toolchain authority;
+# rust-toolchain.toml is a copy of it for rustup.
+mise_tools = mise.get("tools", {})
+require(isinstance(mise_tools, dict) and set(mise_tools) == {"rust"}, "mise.toml tools")
+mise_rust = mise_tools["rust"]
 require(
-    toolchain["toolchain"]["channel"] == package["rust_version"],
-    "rust-toolchain.toml channel",
+    isinstance(mise_rust, dict)
+    and isinstance(mise_rust.get("version"), str)
+    and re.fullmatch(r"\d+\.\d+\.\d+", mise_rust["version"]) is not None,
+    "mise.toml rust version",
+)
+rust_version = mise_rust["version"]
+rust_components = sorted(mise_rust.get("components", []))
+rust_profile = mise_rust.get("profile")
+
+lock_tools = lock.get("tools", {})
+require(
+    isinstance(lock_tools, dict)
+    and set(lock_tools) == {"rust"}
+    and isinstance(lock_tools["rust"], list)
+    and len(lock_tools["rust"]) == 1,
+    "mise.lock tools",
+)
+lock_rust = lock_tools["rust"][0]
+require(
+    lock_rust.get("version") == rust_version and lock_rust.get("backend") == "core:rust",
+    "mise.lock rust entry",
+)
+lock_options = lock_rust.get("options", {})
+require(
+    sorted(lock_options.get("components", "").split(",")) == rust_components
+    and lock_options.get("profile") == rust_profile,
+    "mise.lock rust options",
+)
+
+require(toolchain.get("channel") == rust_version, "rust-toolchain.toml channel")
+require(
+    sorted(toolchain.get("components", [])) == rust_components,
+    "rust-toolchain.toml components",
+)
+require(toolchain.get("profile") == rust_profile, "rust-toolchain.toml profile")
+require(
+    toolchain.get("channel") == package["rust_version"],
+    "rust-toolchain.toml channel and rust-version",
 )
 require(
     package["features"]
@@ -300,7 +376,7 @@ check_package_contents() {
 }
 
 check_release_inputs() {
-    git ls-files --error-unmatch Cargo.toml Cargo.lock rust-toolchain.toml LICENSE CHANGELOG.md >/dev/null
+    git ls-files --error-unmatch Cargo.toml Cargo.lock rust-toolchain.toml mise.toml mise.lock LICENSE CHANGELOG.md >/dev/null
     check_manifest_contract
     check_dependency_contract
     check_package_contents

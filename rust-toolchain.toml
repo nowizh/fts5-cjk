@@ -1,3 +1,5 @@
+# Mirrors mise.toml for rustup; ci/check.sh checks that the two files agree.
 [toolchain]
 channel = "1.97.1"
 components = ["clippy", "rustfmt"]
+profile = "minimal"
