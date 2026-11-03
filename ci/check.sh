@@ -31,7 +31,7 @@ assert_equal() {
 require_tools() {
     local tool
 
-    for tool in basename cargo cc curl dirname git grep make mktemp openssl python3 rm rustc sed sha256sum tar wc; do
+    for tool in basename cargo cc curl dirname grep make mktemp openssl python3 rm rustc sed sha256sum tar wc; do
         command -v "$tool" >/dev/null 2>&1 || die "required host tool '$tool' is unavailable"
     done
 }
@@ -409,8 +409,16 @@ check_package_contents() {
     assert_equal "packaged file list" "$expected" "$actual"
 }
 
-check_release_inputs() {
+# The release inputs must be tracked by Git. This is the only check that needs
+# git and a Git checkout.
+check_tracked_inputs() {
+    command -v git >/dev/null 2>&1 || die "the tracked-file check needs git"
+    git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die \
+        "the tracked-file check needs a Git checkout; run 'ci/check.sh portable' in a source tree without Git metadata"
     git ls-files --error-unmatch Cargo.toml Cargo.lock rust-toolchain.toml mise.toml mise.lock LICENSE CHANGELOG.md >/dev/null
+}
+
+check_release_inputs() {
     check_manifest_contract
     check_dependency_contract
     check_package_contents
@@ -418,7 +426,9 @@ check_release_inputs() {
     cargo publish --dry-run --locked --allow-dirty --no-default-features --features nfc
 }
 
-run_test_gate() {
+# The test gate without the tracked-file check, for a source tree exported
+# from a commit.
+run_portable_gate() {
     require_tools
     check_toolchain_identity
     SQLITE_BUILD_DIR=$(mktemp -d "${TMPDIR:-/tmp}/fts5-cjk-check.XXXXXX")
@@ -432,6 +442,12 @@ run_test_gate() {
     RUSTDOCFLAGS='-D warnings' cargo doc --no-deps --locked --no-default-features
     RUSTDOCFLAGS='-D warnings' cargo doc --no-deps --locked --no-default-features --features nfc
     check_release_inputs
+}
+
+run_test_gate() {
+    require_tools
+    check_tracked_inputs
+    run_portable_gate
 }
 
 run_clippy_gate() {
@@ -455,7 +471,7 @@ run_msrv_gate() {
 }
 
 usage() {
-    printf 'Usage: %s [all|test|clippy|msrv]\n' "$0" >&2
+    printf 'Usage: %s [all|test|portable|clippy|msrv]\n' "$0" >&2
 }
 
 case "${1:-all}" in
@@ -465,6 +481,9 @@ case "${1:-all}" in
         ;;
     test)
         run_test_gate
+        ;;
+    portable)
+        run_portable_gate
         ;;
     clippy)
         run_clippy_gate
