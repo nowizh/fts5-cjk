@@ -27,7 +27,7 @@ Every release entry below states whether any profile changed.
 | default (`nfc` feature off) | `fts5-cjk/v2;unicode61=6.1-default;nfc=off` | `2` | `false` | `fts5_cjk_v2` | `unicode61 remove_diacritics 2` |
 | `features = ["nfc"]` | `fts5-cjk/v2;unicode61=6.1-default;nfc=on` | `2` | `true` | `fts5_cjk_v2_nfc` | `unicode61 remove_diacritics 2` |
 
-## [Unreleased]
+## [0.1.1] - 2026-11-03
 
 ### Changed
 
@@ -38,6 +38,21 @@ Every release entry below states whether any profile changed.
   change NFC output under the unchanged NFC-on profile. A dependency graph
   that requires a later `unicode-normalization` 0.1.x release elsewhere now
   fails resolution in `nfc` builds instead of silently changing index tokens.
+
+### Development
+
+Documentation and repository tooling. Except for `README.md` and
+`CHANGELOG.md`, the files named here are not part of the published package.
+
+- `README.md` documents the `unicode-normalization` bound, the MSRV, and how to
+  select the development and MSRV toolchains.
+- `mise.toml` and `mise.lock` pin the development toolchain, and
+  `rust-toolchain.toml` mirrors them for rustup.
+- `ci/check.sh` checks the active `rustc` and `cargo` against `mise.toml`,
+  including before `clippy`, and gains a `portable` mode for source trees
+  without Git metadata and an `msrv` mode that builds and tests both profiles
+  on the declared MSRV toolchain.
+- `.gitignore` ignores `target/`.
 
 ### Profiles
 

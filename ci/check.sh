@@ -247,7 +247,7 @@ def require(condition, label):
 
 package = json.load(open(sys.argv[1], encoding="utf-8"))["packages"][0]
 require(package["name"] == "fts5-cjk", "name")
-require(package["version"] == "0.1.0", "version")
+require(package["version"] == "0.1.1", "version")
 require(package["license"] == "MIT", "license")
 require(package["publish"] is None, "publish")
 require(package["readme"] == "README.md", "readme")
@@ -362,7 +362,7 @@ check_dependency_contract() {
     default_tree=$(cargo tree --locked --no-default-features --edges normal --depth 1 --prefix none)
     default_tree_lines=$(printf '%s\n' "$default_tree" | sed '/^$/d' | wc -l)
     assert_equal "default selected normal dependency line count" "1" "$default_tree_lines"
-    [[ "$default_tree" == fts5-cjk\ v0.1.0* ]] || die \
+    [[ "$default_tree" == fts5-cjk\ v0.1.1* ]] || die \
         "default selected normal dependency tree does not contain only the crate root"
 
     nfc_tree=$(cargo tree --locked --no-default-features --features nfc --edges normal --depth 1 --prefix none)
